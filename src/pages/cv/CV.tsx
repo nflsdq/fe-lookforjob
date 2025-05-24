@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { Loader, Download, Sparkles, Eye } from "lucide-react";
 import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
-import { cvAPI } from "../../services/api";
-import { CV as CVType } from "../../types";
+import { cvAPI, jobsAPI } from "../../services/api";
+import { CV as CVType, Job } from "../../types";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import toast from "react-hot-toast";
@@ -24,6 +24,8 @@ const CV = () => {
   const [editorContent, setEditorContent] = useState("");
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [matchingJobs, setMatchingJobs] = useState<Job[]>([]);
+  const [isMatching, setIsMatching] = useState(false);
 
   const { handleSubmit } = useForm();
 
@@ -151,6 +153,27 @@ const CV = () => {
     }
   };
 
+  const handleMatchJobs = async () => {
+    setIsMatching(true);
+    setMatchingJobs([]);
+    try {
+      const res = await cvAPI.matchJobs();
+      const ids: number[] = res.data.matched_job_ids || [];
+      if (ids.length === 0) {
+        toast("Tidak ada pekerjaan yang cocok ditemukan.");
+        setIsMatching(false);
+        return;
+      }
+      // Ambil detail jobs berdasarkan id
+      const jobs = await Promise.all(ids.map((id) => jobsAPI.getById(id).then(r => r.data)));
+      setMatchingJobs(jobs);
+    } catch (err) {
+      toast.error("Gagal matching pekerjaan");
+    } finally {
+      setIsMatching(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className='flex justify-center items-center h-64'>
@@ -211,47 +234,55 @@ const CV = () => {
                 Generate dengan AI
               </button>
 
-              <div className='flex gap-3'>
-                <button
-                  type='button'
-                  onClick={previewCV}
-                  disabled={isPreviewing || !cv}
-                  className='inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed'
-                >
-                  {isPreviewing ? (
-                    <Loader className='mr-2 h-4 w-4 animate-spin' />
-                  ) : (
-                    <Eye className='mr-2 h-4 w-4' />
-                  )}
-                  Preview PDF
-                </button>
+              <button
+                type='button'
+                onClick={previewCV}
+                disabled={isPreviewing || !cv}
+                className='inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed'
+              >
+                {isPreviewing ? (
+                  <Loader className='mr-2 h-4 w-4 animate-spin' />
+                ) : (
+                  <Eye className='mr-2 h-4 w-4' />
+                )}
+                Preview PDF
+              </button>
 
-                <button
-                  type='button'
-                  onClick={exportCV}
-                  disabled={isExporting || !cv}
-                  className='inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed'
-                >
-                  {isExporting ? (
-                    <Loader className='mr-2 h-4 w-4 animate-spin' />
-                  ) : (
-                    <Download className='mr-2 h-4 w-4' />
-                  )}
-                  Export ke PDF
-                </button>
+              <button
+                type='button'
+                onClick={exportCV}
+                disabled={isExporting || !cv}
+                className='inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed'
+              >
+                {isExporting ? (
+                  <Loader className='mr-2 h-4 w-4 animate-spin' />
+                ) : (
+                  <Download className='mr-2 h-4 w-4' />
+                )}
+                Export ke PDF
+              </button>
 
-                <button
-                  type='submit'
-                  disabled={isSaving}
-                  className='inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed'
-                >
-                  {isSaving ? (
-                    <Loader className='mr-2 h-4 w-4 animate-spin' />
-                  ) : (
-                    "Simpan CV"
-                  )}
-                </button>
-              </div>
+              <button
+                type='button'
+                className='btn btn-secondary flex items-center gap-2'
+                onClick={handleMatchJobs}
+                disabled={isMatching}
+              >
+                {isMatching ? <Loader className='animate-spin w-4 h-4' /> : <Sparkles className='w-4 h-4' />}
+                Temukan Pekerjaan Cocok
+              </button>
+
+              <button
+                type='submit'
+                disabled={isSaving}
+                className='inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed'
+              >
+                {isSaving ? (
+                  <Loader className='mr-2 h-4 w-4 animate-spin' />
+                ) : (
+                  "Simpan CV"
+                )}
+              </button>
             </div>
           </form>
         </Card>
@@ -329,6 +360,43 @@ const CV = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {matchingJobs.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Pekerjaan yang Cocok untuk Anda</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            {matchingJobs.map((job) => (
+              <a
+                href={job.jobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                key={job.id}
+                className="hover:shadow-lg transition-shadow duration-200"
+              >
+                <Card>
+                  <div className="flex items-center mb-2">
+                    {job.companyLogo && (
+                      <img
+                        src={job.companyLogo}
+                        alt={job.company}
+                        className="w-10 h-10 rounded mr-3 object-contain bg-white border"
+                      />
+                    )}
+                    <div>
+                      <div className="font-semibold text-lg text-primary-700">{job.position}</div>
+                      <div className="text-sm text-gray-500">{job.company}</div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-700 mb-1">{job.location}</div>
+                  <div className="text-xs text-gray-400 mb-1">Diposting: {job.date} {job.agoTime && `(${job.agoTime})`}</div>
+                  {job.salary && <div className="text-xs text-green-600 font-medium">{job.salary}</div>}
+                  {job.keyword && <div className="text-xs text-blue-500">{job.keyword}</div>}
+                </Card>
+              </a>
+            ))}
           </div>
         </div>
       )}

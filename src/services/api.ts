@@ -3,7 +3,8 @@ import { ApiError } from "../types";
 
 // Create an axios instance with default configs
 const api = axios.create({
-  baseURL: "http://localhost:8000/api",
+  // baseURL: "http://localhost:8000/api",
+  baseURL: "https://lookforjob.naufalsidiq.xyz/api",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -85,6 +86,8 @@ export const cvAPI = {
   exportCV: () => api.get("/cv/export", { responseType: "blob" }),
 
   previewCV: () => api.get("/cv/preview", { responseType: "blob" }),
+
+  matchJobs: () => api.post("/cv/match-jobs"),
 };
 
 // Experience API
@@ -134,6 +137,12 @@ export const skillAPI = {
     }),
 
   delete: (id: number) => api.delete(`/skills/${id}`),
+};
+
+// Jobs API (scraped jobs)
+export const jobsAPI = {
+  getAll: (params?: any) => api.get('/jobs', { params }),
+  getById: (id: number) => api.get(`/jobs/${id}`),
 };
 
 export default api;

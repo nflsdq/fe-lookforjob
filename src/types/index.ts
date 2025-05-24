@@ -130,3 +130,17 @@ export interface ApiError {
   message: string;
   errors?: Record<string, string[]>;
 }
+
+// Job types (ScrapedJob)
+export interface Job {
+  id: number;
+  position: string;
+  company: string;
+  location: string;
+  date: string;
+  salary: string | null;
+  jobUrl: string;
+  companyLogo: string | null;
+  agoTime: string | null;
+  keyword: string | null;
+}

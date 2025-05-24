@@ -36,6 +36,9 @@ import EditSkill from './pages/skill/EditSkill';
 // Error pages
 import NotFound from './pages/NotFound';
 
+// New job page
+import Jobs from './pages/Jobs';
+
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -58,6 +61,7 @@ function App() {
       {/* Protected routes */}
       <Route element={<Layout />}>
         <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+        <Route path="/jobs" element={<Jobs />} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
